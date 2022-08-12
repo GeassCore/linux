@@ -70,6 +70,12 @@
 	 * This regulator is PWM-controlled, but the PWM controller is not
 	 * yet supported, so fix the regulator to its default voltage.
 	 */
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		power-supply = <&reg_vcc>;
+		pwms = <&pwm 4 50000 0>; /* PD20/GPIO9 */
+	};
+
 	reg_vdd_cpu: vdd-cpu {
 		compatible = "pwm-regulator";
 		pwms = <&pwm 0 50000 0>;
@@ -293,7 +299,7 @@
 };
 
 &pwm {
-	pinctrl-0 = <&pwm0_pd16_pin>;
+	pinctrl-0 = <&pwm0_pd16_pin>, <&pwm4_pd20_pin>;
 	pinctrl-names = "default";
 	status = "okay";
 };
