@@ -1,0 +1,7 @@
+config CVITEK_PINCTRL_CV1800
+	bool "cvitek pinctrl"
+	select PINMUX
+	select PINCONF
+	select GENERIC_PINCONF
+	help
+	  This enable pinctrl driver for cvitek cv1835 platform

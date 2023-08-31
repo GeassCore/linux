@@ -1,0 +1,1 @@
+obj-$(CONFIG_CV1835_SYSDMA_REMAP)	+= sysdma/cv1835_dma_remap.o

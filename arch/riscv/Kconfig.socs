@@ -48,6 +48,11 @@ config ARCH_THEAD
 	help
 	  This enables support for the RISC-V based T-HEAD SoCs.
 
+config ARCH_CVITEK
+	bool "CVITEK SoCs"
+	help
+	  This enables support for cvitek SoC platform hardware.
+
 config ARCH_VIRT
 	def_bool SOC_VIRT
 
