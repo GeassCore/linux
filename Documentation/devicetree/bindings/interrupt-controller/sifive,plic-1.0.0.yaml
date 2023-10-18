@@ -66,6 +66,7 @@ properties:
           - enum:
               - allwinner,sun20i-d1-plic
               - sophgo,cv1800-plic
+              - sophgo,cv1812h-plic
               - thead,th1520-plic
           - const: thead,c900-plic
       - items:
