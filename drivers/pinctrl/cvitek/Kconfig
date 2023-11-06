@@ -1,0 +1,10 @@
+if ARCH_SOPHGO
+
+config CVITEK_PINCTRL_CV1800B
+	bool "cvitek pinctrl"
+	select PINMUX
+	select PINCONF
+	select GENERIC_PINCONF
+	help
+	  This enable pinctrl driver for cvitek cv180x platform
+endif

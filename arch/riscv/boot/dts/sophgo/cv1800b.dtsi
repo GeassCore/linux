@@ -4,6 +4,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	compatible = "sophgo,cv1800b";
@@ -40,10 +41,34 @@
 		};
 	};
 
+	clk_rst: clk-reset-controller {
+		#reset-cells = <1>;
+		compatible = "cvitek,clk-reset";
+		reg = <0x03002000 0x8>;
+	};
+
 	osc: oscillator {
 		compatible = "fixed-clock";
-		clock-output-names = "osc_25m";
+		clock-output-names = "osc";
 		#clock-cells = <0>;
+	};
+
+	clk: clock-controller {
+		compatible = "cvitek,cv180x-clk";
+		reg = <0x03002000 0x1000>;
+		clocks = <&osc>;
+		#clock-cells = <1>;
+	};
+
+	rst: reset-controller {
+		#reset-cells = <1>;
+		compatible = "cvitek,reset";
+		reg = <0x03003000 0x10>;
+	};
+
+	restart: restart-controller {
+		compatible = "cvitek,restart";
+		reg = <0x05025000 0x2000>;
 	};
 
 	soc {
@@ -119,5 +144,114 @@
 			reg = <0x74000000 0x10000>;
 			interrupts-extended = <&cpu0_intc 3>, <&cpu0_intc 7>;
 		};
+
+		gpio0: gpio@3020000 {
+			compatible = "snps,dw-apb-gpio";
+			reg = <0x03020000 0x1000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			porta: gpio-controller@0 {
+				compatible = "snps,dw-apb-gpio-port";
+				bank-name = "porta";
+				gpio-controller;
+				#gpio-cells = <2>;
+				snps,nr-gpios = <32>;
+				reg = <0>;
+				interrupt-controller;
+				interrupts = <60 IRQ_TYPE_LEVEL_HIGH>;
+			};
+		};
+
+		spi0: spi@4180000 {
+			compatible = "snps,dw-apb-ssi";
+			reg = <0x04180000 0x10000>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			clocks = <&clk 113>;
+			interrupts = <54 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+			num-cs = <1>;
+			spidev@0 {
+				compatible = "rohm,dh2228fv";
+				spi-max-frequency = <1000000>;
+				reg = <0>;
+			};
+		};
+
+		spi1: spi@4190000 {
+			compatible = "snps,dw-apb-ssi";
+			reg = <0x0 0x04190000 0x0 0x10000>;
+			clocks = <&clk 113>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <55 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+			num-cs = <1>;
+			spidev@0 {
+				compatible = "rohm,dh2228fv";
+				spi-max-frequency = <1000000>;
+				reg = <0>;
+			};
+		};
+
+		spi2: spi@41A0000 {
+			compatible = "snps,dw-apb-ssi";
+			reg = <0x0 0x041A0000 0x0 0x10000>;
+			clocks = <&clk 113>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <56 IRQ_TYPE_LEVEL_HIGH>;
+			status = "disabled";
+			num-cs = <1>;
+			spidev@0 {
+				compatible = "rohm,dh2228fv";
+				spi-max-frequency = <1000000>;
+				reg = <0>;
+			};
+		};
+
+		spi3: spi@41B0000 {
+			compatible = "snps,dw-apb-ssi";
+			reg = <0x0 0x041B0000 0x0 0x10000>;
+			clocks = <&clk 113>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			interrupts = <57 IRQ_TYPE_LEVEL_HIGH>;
+			status = "okay";
+			num-cs = <1>;
+			spidev@0 {
+				compatible = "rohm,dh2228fv";
+				spi-max-frequency = <1000000>;
+				reg = <0>;
+			};
+		};
+
+		sd: cv-sd@4310000 {
+			compatible = "cvitek,cv180x-sd";
+			reg = <0x4310000 0x10000>;
+			reg-names = "core_mem";
+			bus-width = <4>;
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			sd-uhs-sdr12;
+			sd-uhs-sdr25;
+			sd-uhs-sdr50;
+			sd-uhs-sdr104;
+			no-sdio;
+			no-mmc;
+			/*no-1-8-v;*/
+			src-frequency = <375000000>;
+			min-frequency = <400000>;
+			max-frequency = <200000000>;
+			64_addressing;
+			reset_tx_rx_phy;
+			reset-names = "sdhci";
+			pll_index = <0x6>;
+			pll_reg = <0x3002070>;
+			cvi-cd-gpios = <&porta 13 GPIO_ACTIVE_LOW>;
+			interrupts = <36 IRQ_TYPE_LEVEL_HIGH>;
+		};
+
 	};
 };

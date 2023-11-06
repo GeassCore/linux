@@ -326,6 +326,7 @@ struct mmc_host {
 	unsigned int		f_min;
 	unsigned int		f_max;
 	unsigned int		f_init;
+	unsigned int		f_src;
 	u32			ocr_avail;
 	u32			ocr_avail_sdio;	/* SDIO-specific OCR */
 	u32			ocr_avail_sd;	/* SD-specific OCR */
@@ -524,6 +525,7 @@ struct mmc_host {
 	struct blk_crypto_profile crypto_profile;
 #endif
 
+	bool			ever_unplugged;
 	/* Host Software Queue support */
 	bool			hsq_enabled;
 	int			hsq_depth;
