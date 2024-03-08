@@ -124,7 +124,7 @@
 
 #define __page_val_to_pfn(_val)  (((_val) & _PAGE_PFN_MASK) >> _PAGE_PFN_SHIFT)
 
-ifndef CONFIG_MMU_SV32
+#ifndef CONFIG_MMU_SV32
 #include <asm/pgtable-64.h>
 
 #define VA_USER_SV39 (UL(1) << (VA_BITS_SV39 - 1))

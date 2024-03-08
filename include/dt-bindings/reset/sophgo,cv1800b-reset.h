@@ -94,3 +94,4 @@
 #define RST_CPUSYS1		293
 #define RST_CPUSYS2		294
 
+#endif /* _DT_BINDINGS_CV1800B_RESET_H */
