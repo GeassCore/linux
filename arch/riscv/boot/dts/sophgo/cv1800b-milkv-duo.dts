@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "cv1800b.dtsi"
+#include <dt-bindings/interrupt-controller/irq.h>
 
 / {
 	model = "Milk-V Duo";
@@ -25,7 +26,18 @@
 
 	memory@80000000 {
 		device_type = "memory";
-		reg = <0x80000000 0x3f40000>;
+		reg = <0x80000000 0xfa00000>;
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		hss_payload: region@80000000 {
+			reg = <0x80000000 0x200000>;
+			no-map;
+		};
 	};
 };
 
@@ -34,5 +46,13 @@
 };
 
 &uart0 {
+	status = "okay";
+};
+
+&gpio0{
+	status = "okay";
+};
+
+&sd{
 	status = "okay";
 };

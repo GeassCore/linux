@@ -6,6 +6,8 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/reset/sophgo,cv1800b-reset.h>
+#include <dt-bindings/clock/cv180x-clock.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	#address-cells = <1>;
@@ -54,6 +56,13 @@
 		#size-cells = <1>;
 		dma-noncoherent;
 		ranges;
+
+		clk: clock-controller@3002000  {
+			compatible = "cvitek,cv180x-clk";
+			reg = <0x03002000 0x1000>;
+			clocks = <&osc>;
+			#clock-cells = <1>;
+		};
 
 		rst: reset-controller@3003000 {
 			compatible = "sophgo,cv1800b-reset";
@@ -201,5 +210,107 @@
 			reg = <0x74000000 0x10000>;
 			interrupts-extended = <&cpu0_intc 3>, <&cpu0_intc 7>;
 		};
+
+		dma: dma-controller@4330000 {
+			compatible = "sophgo,cv1800b-axi-dma";
+			reg = <0x04330000 0x10000>;
+			clocks = <&clk CV180X_CLK_SDMA_AXI>, <&osc>;
+			clock-names = "core-clk", "cfgr-clk";
+			interrupts = <29 IRQ_TYPE_LEVEL_HIGH>;
+			#dma-cells = <1>;
+			dma-channels = <4>;
+			snps,dma-masters = <2>;
+			snps,data-width = <3>;
+			snps,block-size = <1024 1024 1024 1024>;
+			snps,priority = <0 1 2 3>;
+			snps,axi-max-burst-len = <16>;
+		};
+
+		eth_csrclk: eth_csrclk {
+			clock-output-names = "eth_csrclk";
+			clock-frequency = <250000000>;
+			#clock-cells = <0x0>;
+			compatible = "fixed-clock";
+		};
+
+		eth_ptpclk: eth_ptpclk {
+			clock-output-names = "eth_ptpclk";
+			clock-frequency = <50000000>;
+			#clock-cells = <0x0>;
+			compatible = "fixed-clock";
+		};
+
+		stmmac_axi_setup: stmmac-axi-config {
+			snps,wr_osr_lmt = <1>;
+			snps,rd_osr_lmt = <2>;
+			snps,blen = <4 8 16 0 0 0 0>;
+		};
+
+		mtl_rx_setup: rx-queues-config {
+			snps,rx-queues-to-use = <1>;
+			queue0 {};
+		};
+
+		mtl_tx_setup: tx-queues-config {
+			snps,tx-queues-to-use = <1>;
+			queue0 {};
+		};
+
+		ethernet0: ethernet@4070000 {
+			compatible = "cvitek,ethernet";
+			reg = <0x04070000 0x10000>;
+
+			interrupt-names = "macirq";
+			interrupts = <31 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-parent = <&plic>;
+
+			clock-names = "stmmaceth", "ptp_ref";
+			clocks = <&eth_csrclk>, <&eth_ptpclk>;
+			//phy-reset-gpios = <&porta 26 0>;
+
+			tx-fifo-depth = <8192>;
+			rx-fifo-depth = <8192>;
+			/* no hash filter and perfect filter support */
+			snps,multicast-filter-bins = <0>;
+			snps,perfect-filter-entries = <1>;
+
+			snps,txpbl = <8>;
+			snps,rxpbl = <8>;
+			snps,aal;
+
+			snps,axi-config = <&stmmac_axi_setup>;
+			snps,mtl-rx-config = <&mtl_rx_setup>;
+			snps,mtl-tx-config = <&mtl_tx_setup>;
+
+			phy-mode = "rmii";
+		};
+
+		sd:cv-sd@4310000 {
+			compatible = "cvitek,cv180x-sd";
+			reg = <0x4310000 0x1000>;
+			reg-names = "core_mem";
+			bus-width = <4>;
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			sd-uhs-sdr12;
+			sd-uhs-sdr25;
+			sd-uhs-sdr50;
+			sd-uhs-sdr104;
+			no-sdio;
+			no-mmc;
+			no-1-8-v;
+			src-frequency = <375000000>;
+			min-frequency = <400000>;
+			max-frequency = <200000000>;
+			64_addressing;
+			reset_tx_rx_phy;
+			reset-names = "sdhci";
+			pll_index = <0x6>;
+			pll_reg = <0x3002070>;
+			cvi-cd-gpios = <&porta 13 GPIO_ACTIVE_LOW>;
+			interrupts = <36 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-parent = <&plic>;
+		};
+
 	};
 };
