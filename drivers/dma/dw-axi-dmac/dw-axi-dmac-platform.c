@@ -1581,6 +1581,9 @@ static const struct of_device_id dw_dma_of_id_table[] = {
 	}, {
 		.compatible = "starfive,jh7110-axi-dma",
 		.data = (void *)(AXI_DMA_FLAG_HAS_RESETS | AXI_DMA_FLAG_USE_CFG2),
+	}, {
+		.compatible = "sophgo,cv1800b-axi-dma",
+		.data = (void *)(AXI_DMA_FLAG_USE_CFG2),
 	},
 	{}
 };

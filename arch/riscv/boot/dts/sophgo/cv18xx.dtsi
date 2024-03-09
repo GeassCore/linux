@@ -201,5 +201,21 @@
 			reg = <0x74000000 0x10000>;
 			interrupts-extended = <&cpu0_intc 3>, <&cpu0_intc 7>;
 		};
+
+		dma: dma-controller@4330000 {
+			compatible = "sophgo,cv1800b-axi-dma";
+			reg = <0x04330000 0x10000>;
+			clocks = <&clk CV180X_CLK_SDMA_AXI>, <&osc>;
+			clock-names = "core-clk", "cfgr-clk";
+			interrupts = <29 IRQ_TYPE_LEVEL_HIGH>;
+			#dma-cells = <1>;
+			dma-channels = <4>;
+			snps,dma-masters = <2>;
+			snps,data-width = <3>;
+			snps,block-size = <1024 1024 1024 1024>;
+			snps,priority = <0 1 2 3>;
+			snps,axi-max-burst-len = <16>;
+		};
+
 	};
 };
