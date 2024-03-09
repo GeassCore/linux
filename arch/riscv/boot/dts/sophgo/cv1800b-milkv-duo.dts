@@ -6,6 +6,7 @@
 /dts-v1/;
 
 #include "cv1800b.dtsi"
+#include <dt-bindings/interrupt-controller/irq.h>
 
 / {
 	model = "Milk-V Duo";
@@ -45,5 +46,13 @@
 };
 
 &uart0 {
+	status = "okay";
+};
+
+&gpio0{
+	status = "okay";
+};
+
+&sd{
 	status = "okay";
 };

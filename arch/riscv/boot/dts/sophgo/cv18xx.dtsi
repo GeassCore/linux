@@ -6,6 +6,8 @@
 
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/reset/sophgo,cv1800b-reset.h>
+#include <dt-bindings/clock/cv180x-clock.h>
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	#address-cells = <1>;
@@ -54,6 +56,13 @@
 		#size-cells = <1>;
 		dma-noncoherent;
 		ranges;
+
+		clk: clock-controller@3002000  {
+			compatible = "cvitek,cv180x-clk";
+			reg = <0x03002000 0x1000>;
+			clocks = <&osc>;
+			#clock-cells = <1>;
+		};
 
 		rst: reset-controller@3003000 {
 			compatible = "sophgo,cv1800b-reset";
@@ -215,6 +224,33 @@
 			snps,block-size = <1024 1024 1024 1024>;
 			snps,priority = <0 1 2 3>;
 			snps,axi-max-burst-len = <16>;
+		};
+
+		sd:cv-sd@4310000 {
+			compatible = "cvitek,cv180x-sd";
+			reg = <0x4310000 0x1000>;
+			reg-names = "core_mem";
+			bus-width = <4>;
+			cap-sd-highspeed;
+			cap-mmc-highspeed;
+			sd-uhs-sdr12;
+			sd-uhs-sdr25;
+			sd-uhs-sdr50;
+			sd-uhs-sdr104;
+			no-sdio;
+			no-mmc;
+			no-1-8-v;
+			src-frequency = <375000000>;
+			min-frequency = <400000>;
+			max-frequency = <200000000>;
+			64_addressing;
+			reset_tx_rx_phy;
+			reset-names = "sdhci";
+			pll_index = <0x6>;
+			pll_reg = <0x3002070>;
+			cvi-cd-gpios = <&porta 13 GPIO_ACTIVE_LOW>;
+			interrupts = <36 IRQ_TYPE_LEVEL_HIGH>;
+			interrupt-parent = <&plic>;
 		};
 
 	};

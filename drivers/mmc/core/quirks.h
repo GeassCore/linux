@@ -77,6 +77,8 @@ static const struct mmc_fixup __maybe_unused mmc_blk_fixups[] = {
 		  MMC_QUIRK_LONG_READ_TIME),
 	MMC_FIXUP("008GE0", CID_MANFID_TOSHIBA, CID_OEMID_ANY, add_quirk_mmc,
 		  MMC_QUIRK_LONG_READ_TIME),
+	MMC_FIXUP("Q2J55L", CID_MANFID_MICRON, 0x14e, add_quirk_mmc,
+		  MMC_QUIRK_EXTRA_LONG_READ_TIME),
 
 	/*
 	 * On these Samsung MoviNAND parts, performing secure erase or

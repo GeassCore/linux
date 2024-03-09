@@ -244,6 +244,16 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 		}
 	}
 
+	/*
+	 * Block all CMD except for CMD0 once CARD ever unplugged
+	 */
+	if (host->ever_unplugged && mrq->cmd->opcode != 0) {
+		mrq->cmd->error = -EBUSY;
+		mmc_complete_cmd(mrq);
+		complete(&mrq->completion);
+		return;
+	}
+
 	if (mrq->cap_cmd_during_tfr) {
 		host->ongoing_mrq = mrq;
 		/*
