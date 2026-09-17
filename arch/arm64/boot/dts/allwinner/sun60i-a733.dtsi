@@ -777,6 +777,11 @@
 		r_ccu: r_ccu@7010000 {
 			compatible = "allwinner,sun60iw2-r-ccu";
 			reg = <0x0 0x07010000 0x0 0x340>;
+			clocks = <&ccu CLK_PLL_REF>,
+				 <&dcxo24M>,
+				 <&rtc_ccu CLK_OSC32K>,
+				 <&rc_16m>;
+			clock-names = "sys24M", "hosc", "losc", "iosc";
 			#clock-cells = <1>;
 			#reset-cells = <1>;
 		};
