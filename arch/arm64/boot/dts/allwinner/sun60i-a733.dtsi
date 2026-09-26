@@ -636,6 +636,21 @@
 
 		};
 
+		deinterlace: deinterlace@5400000 {
+			compatible = "allwinner,sun60i-a733-deinterlace";
+			reg = <0x0 0x05400000 0x0 0x40000>;
+			interrupts = <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&ccu CLK_DI>, <&ccu CLK_DI_GATE>;
+			clock-names = "mod", "bus";
+			assigned-clocks = <&ccu CLK_DI>;
+			assigned-clock-rates = <300000000>;
+			resets = <&ccu RST_BUS_DI>, <&ccu RST_BUS_DE_SY>;
+			reset-names = "bus", "sys";
+			iommus = <&mmu_aw 9 1>;
+			power-domains = <&pck600 PD_DE_SYS>;
+			status = "disabled";
+		};
+
 		uart0: uart@2500000 {
 			compatible = "snps,dw-apb-uart";
 			reg = <0x0 0x2500000 0x0 0x400>;
