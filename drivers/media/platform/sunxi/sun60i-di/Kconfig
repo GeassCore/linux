@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright(c) 2020 - 2023 Allwinner Technology Co.,Ltd. All rights reserved.
+
+config VIDEO_SUN60I_DI
+	tristate "Allwinner A733 deinterlace driver"
+	depends on V4L_MEM2MEM_DRIVERS
+	depends on ARCH_SUNXI || COMPILE_TEST
+	depends on VIDEO_DEV
+	depends on COMMON_CLK && RESET_CONTROLLER && OF
+	depends on PM
+	select VIDEOBUF2_DMA_CONTIG
+	select V4L2_MEM2MEM_DEV
+	help
+	  Support the DI301 memory-to-memory deinterlacer found in the
+	  Allwinner A733 SoC. The driver exposes a V4L2 mem2mem device and
+	  currently supports bob deinterlacing of NV12 and NV21 video.
+	  Each interlaced output buffer produces two progressive capture
+	  buffers, one for each input field.
