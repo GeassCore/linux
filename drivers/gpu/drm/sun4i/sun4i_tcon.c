@@ -16,6 +16,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
+#include <linux/phy/phy.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
 
@@ -253,6 +254,35 @@ static void sun4i_tcon_lvds_set_status(struct sun4i_tcon *tcon,
 				       bool enabled)
 {
 	if (enabled) {
+		if (tcon->lvds_phy) {
+			union phy_configure_opts opts = { };
+			int ret;
+
+			ret = phy_init(tcon->lvds_phy);
+			if (ret) {
+				dev_err(tcon->dev, "Couldn't initialise LVDS PHY: %d\n",
+					ret);
+				return;
+			}
+
+			opts.lvds.bits_per_lane_and_dclk_cycle = 7;
+			opts.lvds.differential_clk_rate = tcon->lvds_pixel_clock;
+			opts.lvds.lanes = 4;
+			opts.lvds.is_slave = false;
+
+			ret = phy_set_mode(tcon->lvds_phy, PHY_MODE_LVDS);
+			if (!ret)
+				ret = phy_configure(tcon->lvds_phy, &opts);
+			if (!ret)
+				ret = phy_power_on(tcon->lvds_phy);
+			if (ret) {
+				dev_err(tcon->dev, "Couldn't enable LVDS PHY: %d\n",
+					ret);
+				phy_exit(tcon->lvds_phy);
+				return;
+			}
+		}
+
 		regmap_update_bits(tcon->regs, SUN4I_TCON0_LVDS_IF_REG,
 				   SUN4I_TCON0_LVDS_IF_EN,
 				   SUN4I_TCON0_LVDS_IF_EN);
@@ -261,6 +291,10 @@ static void sun4i_tcon_lvds_set_status(struct sun4i_tcon *tcon,
 	} else {
 		regmap_update_bits(tcon->regs, SUN4I_TCON0_LVDS_IF_REG,
 				   SUN4I_TCON0_LVDS_IF_EN, 0);
+		if (tcon->lvds_phy) {
+			phy_power_off(tcon->lvds_phy);
+			phy_exit(tcon->lvds_phy);
+		}
 	}
 }
 
@@ -513,6 +547,8 @@ static void sun4i_tcon0_mode_set_lvds(struct sun4i_tcon *tcon,
 	tcon->dclk_min_div = 7;
 	tcon->dclk_max_div = 7;
 	clk_set_rate(tcon->dclk, mode->crtc_clock * 1000);
+
+	tcon->lvds_pixel_clock = mode->crtc_clock * 1000;
 
 	/* Set the resolution */
 	regmap_write(tcon->regs, SUN4I_TCON0_BASIC0_REG,
@@ -795,9 +831,11 @@ void sun4i_tcon_mode_set(struct sun4i_tcon *tcon,
 	case DRM_MODE_ENCODER_DSI:
 		/* DSI is tied to special case of CPU interface */
 		sun4i_tcon0_mode_set_cpu(tcon, encoder, mode);
+		sun4i_tcon_set_mux(tcon, 0, encoder);
 		break;
 	case DRM_MODE_ENCODER_LVDS:
 		sun4i_tcon0_mode_set_lvds(tcon, encoder, mode);
+		sun4i_tcon_set_mux(tcon, 0, encoder);
 		break;
 	case DRM_MODE_ENCODER_NONE:
 		sun4i_tcon0_mode_set_rgb(tcon, encoder, mode);
@@ -1242,6 +1280,15 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 	}
 
 	if (tcon->quirks->supports_lvds) {
+		if (tcon->quirks->external_lvds_phy) {
+			tcon->lvds_phy = devm_phy_optional_get(dev, "lvds");
+			if (IS_ERR(tcon->lvds_phy)) {
+				ret = PTR_ERR(tcon->lvds_phy);
+				dev_err_probe(dev, ret, "Couldn't get LVDS PHY\n");
+				goto err_assert_reset;
+			}
+		}
+
 		/*
 		 * This can only be made optional since we've had DT
 		 * nodes without the LVDS reset properties.
@@ -1282,6 +1329,7 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 		}
 
 		if (!has_lvds_rst ||
+		    (tcon->quirks->external_lvds_phy && !tcon->lvds_phy) ||
 		    (tcon->quirks->has_lvds_alt && !has_lvds_alt)) {
 			dev_warn(dev, "Missing LVDS properties, Please upgrade your DT\n");
 			dev_warn(dev, "LVDS output disabled\n");
@@ -1326,7 +1374,7 @@ static int sun4i_tcon_bind(struct device *dev, struct device *master,
 		goto err_free_dclk;
 	}
 
-	if (tcon->quirks->has_channel_0) {
+	if (tcon->quirks->has_channel_0 && !tcon->quirks->no_rgb_output) {
 		/*
 		 * If we have an LVDS panel connected to the TCON, we should
 		 * just probe the LVDS connector. Otherwise, just probe RGB as
@@ -1623,6 +1671,41 @@ static const struct sun4i_tcon_quirks sun20i_d1_lcd_quirks = {
 	.set_mux		= sun8i_r40_tcon_tv_set_mux,
 };
 
+static const struct sun4i_tcon_quirks sun60i_a733_lcd_quirks = {
+	.has_channel_0		= true,
+	.dclk_min_div		= 1,
+};
+
+/*
+ * A733 has three TCON-LCD instances with the same timing-controller
+ * register layout, but their output wiring is different:
+ *
+ *   LCD0: RGB, LVDS0, DSI0 and DSI1 (dual DSI)
+ *   LCD1: DSI1 only
+ *   LCD2: RGB and LVDS1
+ *
+ * Keep separate matches even though the TCON part currently has identical
+ * quirks.  LVDS and DSI live in separate Combo-PHY / DSI 4.0 blocks and must
+ * not be modelled as the legacy TCON-integrated LVDS/DSI hardware.
+ */
+static const struct sun4i_tcon_quirks sun60i_a733_lcd0_quirks = {
+	.has_channel_0		= true,
+	.supports_lvds		= true,
+	.external_lvds_phy	= true,
+	.dclk_min_div		= 1,
+};
+
+static const struct sun4i_tcon_quirks sun60i_a733_lcd1_quirks = {
+	.has_channel_0		= true,
+	.no_rgb_output		= true,
+	.dclk_min_div		= 1,
+};
+
+static const struct sun4i_tcon_quirks sun60i_a733_lcd2_quirks = {
+	.has_channel_0		= true,
+	.dclk_min_div		= 1,
+};
+
 static const struct sun4i_tcon_quirks sun60i_a733_tv_quirks = {
 	.has_channel_1		= true,
 	.polarity_in_ch0	= true,
@@ -1654,6 +1737,10 @@ const struct of_device_id sun4i_tcon_of_table[] = {
 	{ .compatible = "allwinner,sun9i-a80-tcon-tv", .data = &sun9i_a80_tcon_tv_quirks },
 	{ .compatible = "allwinner,sun20i-d1-tcon-lcd", .data = &sun20i_d1_lcd_quirks },
 	{ .compatible = "allwinner,sun20i-d1-tcon-tv", .data = &sun8i_r40_tv_quirks },
+	{ .compatible = "allwinner,sun60i-a733-tcon-lcd0", .data = &sun60i_a733_lcd0_quirks },
+	{ .compatible = "allwinner,sun60i-a733-tcon-lcd1", .data = &sun60i_a733_lcd1_quirks },
+	{ .compatible = "allwinner,sun60i-a733-tcon-lcd2", .data = &sun60i_a733_lcd2_quirks },
+	{ .compatible = "allwinner,sun60i-a733-tcon-lcd", .data = &sun60i_a733_lcd_quirks },
 	{ .compatible = "allwinner,sun60i-a733-tcon-tv", .data = &sun60i_a733_tv_quirks },
 	{ }
 };

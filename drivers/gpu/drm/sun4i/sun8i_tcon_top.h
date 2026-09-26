@@ -49,5 +49,7 @@ extern const struct of_device_id sun8i_tcon_top_of_table[];
 int sun8i_tcon_top_set_hdmi_src(struct device *dev, int tcon);
 int sun8i_tcon_top_de_config(struct device *dev, int mixer, int tcon);
 int sun8i_tcon_top_hdmi_gate_enable(struct device *dev, bool enable);
+int sun8i_tcon_top_dsi_config(struct device *dev, unsigned int dsi,
+			      unsigned int tcon, bool enable);
 
 #endif /* _SUN8I_TCON_TOP_H_ */

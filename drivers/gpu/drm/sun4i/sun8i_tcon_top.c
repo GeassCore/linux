@@ -99,6 +99,53 @@ int sun8i_tcon_top_hdmi_gate_enable(struct device *dev, bool enable)
 }
 EXPORT_SYMBOL(sun8i_tcon_top_hdmi_gate_enable);
 
+int sun8i_tcon_top_dsi_config(struct device *dev, unsigned int dsi,
+			      unsigned int tcon, bool enable)
+{
+	struct sun8i_tcon_top *top = dev_get_drvdata(dev);
+	unsigned long flags;
+	u32 val;
+
+	if (!top || !of_device_is_compatible(dev->of_node,
+					     "allwinner,sun60i-a733-tcon-lcd-top"))
+		return -EINVAL;
+	if (dsi > 1 || tcon > 1 || (dsi == 0 && tcon != 0))
+		return -EINVAL;
+
+	spin_lock_irqsave(&top->reg_lock, flags);
+
+	/* A733 User Manual 15.1.9.1: DSI1 can select LCD0 or LCD1. */
+	val = readl(top->regs + 0x04);
+	if (dsi == 1) {
+		if (tcon == 0)
+			val |= BIT(4);
+		else
+			val &= ~BIT(4);
+	}
+	writel(val, top->regs + 0x04);
+
+	/* Use DISPLL for the active TCON-LCD and matching Combo-PHY. */
+	val = readl(top->regs + 0x0c);
+	if (enable)
+		val |= BIT(tcon) | BIT(4 + dsi);
+	else
+		val &= ~(BIT(tcon) | BIT(4 + dsi));
+	writel(val, top->regs + 0x0c);
+
+	/* Gate ownership follows the TCON-LCD source, not the DSI index. */
+	val = readl(top->regs + 0x20);
+	if (enable)
+		val |= BIT(16 + tcon);
+	else
+		val &= ~BIT(16 + tcon);
+	writel(val, top->regs + 0x20);
+
+	spin_unlock_irqrestore(&top->reg_lock, flags);
+
+	return 0;
+}
+EXPORT_SYMBOL(sun8i_tcon_top_dsi_config);
+
 int sun8i_tcon_top_de_config(struct device *dev, int mixer, int tcon)
 {
 	struct sun8i_tcon_top *tcon_top = dev_get_drvdata(dev);
@@ -380,6 +427,10 @@ static const struct sun8i_tcon_top_quirks sun50i_h6_tcon_top_quirks = {
 	.has_legacy_mux = true,
 };
 
+static const struct sun8i_tcon_top_quirks sun60i_a733_lcd_top_quirks = {
+	/* TCON-LCD and bus clocks come from the CCU. */
+};
+
 static const struct sun8i_tcon_top_quirks sun60i_a733_tv_top_quirks = {
 	.has_tcon_tv0	= true,
 };
@@ -401,6 +452,10 @@ const struct of_device_id sun8i_tcon_top_of_table[] = {
 	{
 		.compatible = "allwinner,sun60i-a733-tcon-top",
 		.data = &sun60i_a733_tv_top_quirks
+	},
+	{
+		.compatible = "allwinner,sun60i-a733-tcon-lcd-top",
+		.data = &sun60i_a733_lcd_top_quirks
 	},
 	{ /* sentinel */ }
 };

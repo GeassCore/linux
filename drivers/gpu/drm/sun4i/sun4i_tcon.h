@@ -261,6 +261,7 @@
 #define SUN4I_TCON_MAX_CHANNELS		2
 
 struct sun4i_tcon;
+struct phy;
 
 struct sun4i_tcon_quirks {
 	bool	has_channel_0;	/* a83t does not have channel 0 on second TCON */
@@ -269,6 +270,8 @@ struct sun4i_tcon_quirks {
 	bool	needs_de_be_mux; /* sun6i needs mux to select backend */
 	bool    needs_edp_reset; /* a80 edp reset needed for tcon0 access */
 	bool	supports_lvds;   /* Does the TCON support an LVDS output? */
+	bool	external_lvds_phy; /* LVDS analog transmitter is a generic PHY */
+	bool	no_rgb_output;  /* Channel 0 is connected only to another controller */
 	bool	polarity_in_ch0; /* some tcon1 channels have polarity bits in tcon0 pol register */
 	bool	sun60i_tv;	 /* A733 TCON-TV register map + builtin pattern */
 	u8	dclk_min_div;	/* minimum divider for TCON0 DCLK */
@@ -303,6 +306,8 @@ struct sun4i_tcon {
 	/* Reset control */
 	struct reset_control		*lcd_rst;
 	struct reset_control		*lvds_rst;
+	struct phy			*lvds_phy;
+	unsigned long			lvds_pixel_clock;
 
 	/* Platform adjustments */
 	const struct sun4i_tcon_quirks	*quirks;
