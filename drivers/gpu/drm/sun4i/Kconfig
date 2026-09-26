@@ -47,12 +47,13 @@ config DRM_SUN4I_BACKEND
 	  selected the module will be called sun4i-backend.
 
 config DRM_SUN6I_DSI
-	tristate "Allwinner A31/A64 MIPI-DSI Controller Support"
+	tristate "Allwinner A31/A64/A733 MIPI-DSI Controller Support"
 	default DRM_SUN4I
 	select CRC_CCITT
 	select DRM_MIPI_DSI
 	select RESET_CONTROLLER
 	select PHY_SUN6I_MIPI_DPHY
+	select PHY_SUN60I_A733_DISPLAY if ARCH_SUNXI
 	help
 	  Choose this option if you want have an Allwinner SoC with
 	  MIPI-DSI support. If M is selected the module will be called
