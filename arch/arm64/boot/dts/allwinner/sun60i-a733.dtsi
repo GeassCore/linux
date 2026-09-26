@@ -11,6 +11,7 @@
 #include <dt-bindings/clock/sun60i-a733-rtc.h>
 #include <dt-bindings/clock/sun60i-a733-r-ccu.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
+#include <dt-bindings/power/allwinner,sun60i-a733-pck-600.h>
 #include <dt-bindings/reset/sun60i-a733-ccu.h>
 #include <dt-bindings/thermal/thermal.h>
 #include <dt-bindings/reset/sun60i-a733-r-ccu.h>
@@ -548,6 +549,22 @@
 			masters = "USB", "CSI", "ISP", "VE_ENC", "dummy04", "dummy05",
 				"VE_DEC0", "VE_DEC1", "DE0","DI","G2D","EINK", "DEBUG_MODE";
 
+		};
+
+		g2d: g2d@5440000 {
+			compatible = "allwinner,sun60i-a733-g2d";
+			reg = <0x0 0x05440000 0x0 0x30000>;
+			interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&ccu CLK_G2D_GATE>, <&ccu CLK_G2D>,
+				 <&ccu CLK_MBUS_DESYS_GATE>, <&ccu CLK_DE_AHB_GATE>;
+			clock-names = "bus", "g2d", "mbus", "ahb";
+			assigned-clocks = <&ccu CLK_G2D>;
+			assigned-clock-rates = <300000000>;
+			resets = <&ccu RST_BUS_G2D>, <&ccu RST_BUS_DE_SY>;
+			reset-names = "g2d", "de";
+			iommus = <&mmu_aw 10 1>;
+			power-domains = <&pck600 PD_DE_SYS>;
+			status = "disabled";
 		};
 
 		uart0: uart@2500000 {
