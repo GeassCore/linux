@@ -32,6 +32,20 @@ config PHY_SUN6I_MIPI_DPHY
 	  MIPI-DSI support. If M is selected, the module will be
 	  called sun6i_mipi_dphy.
 
+config PHY_SUN60I_A733_DISPLAY
+	tristate "Allwinner A733 display Combo-PHY support"
+	depends on ARCH_SUNXI || COMPILE_TEST
+	depends on HAS_IOMEM && COMMON_CLK
+	depends on RESET_CONTROLLER
+	select GENERIC_PHY
+	select GENERIC_PHY_MIPI_DPHY
+	select REGMAP_MMIO
+	help
+	  Enable support for the display Combo-PHY found in the Allwinner
+	  A733 SoC. The driver supports its LVDS transmitter, MIPI D-PHY and
+	  dedicated display PLL. It is used by the display controllers when
+	  driving LVDS panels or MIPI DSI peripherals.
+
 config PHY_SUN9I_USB
 	tristate "Allwinner sun9i SoC USB PHY driver"
 	depends on ARCH_SUNXI || COMPILE_TEST
