@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright(c) 2020 - 2023 Allwinner Technology Co.,Ltd. All rights reserved.
+
+config VIDEO_SUN60I_G2D
+	tristate "Allwinner A733 G2D driver"
+	depends on V4L_MEM2MEM_DRIVERS
+	depends on ARCH_SUNXI || COMPILE_TEST
+	depends on VIDEO_DEV
+	depends on COMMON_CLK && RESET_CONTROLLER && OF
+	depends on PM
+	select VIDEOBUF2_DMA_CONTIG
+	select V4L2_MEM2MEM_DEV
+	help
+	  Support the G2D accelerator found in the Allwinner A733 SoC.
+	  The driver exposes the copy/rotate and mixer engines through the
+	  V4L2 memory-to-memory API. It supports rotation, reflection, scaling
+	  and RGB/YUV format conversion. Scaling and format conversion cannot
+	  be combined with rotation or reflection in a single operation.
+
+	  To compile this driver as a module, choose M here.

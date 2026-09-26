@@ -7,3 +7,4 @@ obj-y		+= sun8i-a83t-mipi-csi2/
 obj-y		+= sun8i-di/
 obj-y		+= sun8i-rotate/
 obj-y		+= sun60i-di/
+obj-y		+= sun60i-g2d/
