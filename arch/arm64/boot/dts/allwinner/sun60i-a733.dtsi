@@ -475,6 +475,84 @@
 				function = "dmic";
 				allwinner,pinmux = <6>;
 			};
+
+			/* TCON-LCD0 24-bit parallel RGB: D[23:0], CLK, DE, HSYNC, VSYNC. */
+			/omit-if-no-ref/
+			rgb0_24pins: rgb0-24pins {
+				pins = "PG0", "PG1", "PD0", "PD1", "PD2", "PD3",
+				       "PD4", "PD5", "PG2", "PG3", "PD6", "PD7",
+				       "PD8", "PD9", "PD10", "PD11", "PG4", "PG5",
+				       "PD12", "PD13", "PD14", "PD15", "PD16",
+				       "PD17", "PD18", "PD19", "PD20", "PD21";
+				function = "lcd0";
+				drive-strength = <10>;
+			};
+
+			/* TCON-LCD2 24-bit parallel RGB output. */
+			/omit-if-no-ref/
+			rgb1_24pins: rgb1-24pins {
+				pins = "PJ0", "PJ1", "PJ2", "PJ3", "PJ4", "PJ5",
+				       "PJ6", "PJ7", "PJ8", "PJ9", "PJ10", "PJ11",
+				       "PJ12", "PJ13", "PJ14", "PJ15", "PJ16",
+				       "PJ17", "PJ18", "PJ19", "PJ20", "PJ21",
+				       "PJ22", "PJ23", "PJ24", "PJ25", "PJ26",
+				       "PJ27";
+				function = "lcd1";
+				drive-strength = <10>;
+			};
+
+			/* Combo-PHY0: DSI0 four lanes or LVDS0, selected by its PHY driver. */
+			/omit-if-no-ref/
+			dsi0_4lane_pins: dsi0-4lane-pins {
+				pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5",
+				       "PD6", "PD7", "PD8", "PD9";
+				function = "dsi0";
+				drive-strength = <30>;
+				bias-disable;
+			};
+
+			/omit-if-no-ref/
+			lvds0_pins: lvds0-pins {
+				pins = "PD0", "PD1", "PD2", "PD3", "PD4", "PD5",
+				       "PD6", "PD7", "PD8", "PD9";
+				function = "lvds0";
+				drive-strength = <30>;
+			};
+
+			/* Combo-PHY1: DSI1 four lanes or the second LCD0 LVDS link. */
+			/omit-if-no-ref/
+			dsi1_4lane_pins: dsi1-4lane-pins {
+				pins = "PD10", "PD11", "PD12", "PD13", "PD14",
+				       "PD15", "PD16", "PD17", "PD18", "PD19";
+				function = "dsi1";
+				drive-strength = <30>;
+				bias-disable;
+			};
+
+			/omit-if-no-ref/
+			lvds1_pins: lvds1-pins {
+				pins = "PD10", "PD11", "PD12", "PD13", "PD14",
+				       "PD15", "PD16", "PD17", "PD18", "PD19";
+				function = "lvds1";
+				drive-strength = <30>;
+			};
+
+			/* TCON-LCD2 LVDS output uses the PJ Combo-PHY pin banks. */
+			/omit-if-no-ref/
+			lvds2_pins: lvds2-pins {
+				pins = "PJ0", "PJ1", "PJ2", "PJ3", "PJ4", "PJ5",
+				       "PJ6", "PJ7", "PJ8", "PJ9";
+				function = "lvds2";
+				drive-strength = <30>;
+			};
+
+			/omit-if-no-ref/
+			lvds3_pins: lvds3-pins {
+				pins = "PJ10", "PJ11", "PJ12", "PJ13", "PJ14",
+				       "PJ15", "PJ16", "PJ17", "PJ18", "PJ19";
+				function = "lvds3";
+				drive-strength = <30>;
+			};
 		};
 
 		ccu: ccu@2002000 {
