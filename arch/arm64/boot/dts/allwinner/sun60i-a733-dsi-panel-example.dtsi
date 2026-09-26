@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: (GPL-2.0-or-later OR MIT)
+/* Copyright(c) 2020 - 2023 Allwinner Technology Co.,Ltd. All rights reserved. */
+/*
+ * Board-level A733 DSI panel template. Do not include this file unchanged.
+ * Replace the panel compatible, supplies, GPIOs and mode-specific properties
+ * with the panel binding and schematic values for the actual board.
+ */
+
+/* Select one display pipeline. The common SoC nodes remain disabled. */
+&de {
+	status = "okay";
+};
+
+&mixer0 {
+	allwinner,tcon-id = <0>;
+	status = "okay";
+};
+
+&tcon_lcd_top {
+	status = "okay";
+};
+
+&tcon_lcd0 {
+	status = "okay";
+};
+
+&dsi0_combophy {
+	status = "okay";
+};
+
+&dsi0 {
+	status = "okay";
+
+	/*
+	 * Example only: choose a compatible supported by the real panel driver.
+	 * A panel requiring DCS initialization needs its dedicated panel driver.
+	 */
+	panel@0 {
+		compatible = "panasonic,vvx10f034n00";
+		reg = <0>;
+		power-supply = <&reg_lcd_3v3>;
+		backlight = <&backlight>;
+	};
+};
