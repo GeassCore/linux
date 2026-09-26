@@ -149,6 +149,10 @@
 	status = "okay";
 };
 
+&g2d {
+	status = "okay";
+};
+
 &gmac {
 	assigned-clocks = <&ccu CLK_GMAC0_PHY>;
 	assigned-clock-rates = <25000000>;
