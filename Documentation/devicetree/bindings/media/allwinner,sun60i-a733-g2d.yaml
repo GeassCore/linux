@@ -1,0 +1,89 @@
+# SPDX-License-Identifier: GPL-2.0
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/media/allwinner,sun60i-a733-g2d.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Allwinner A733 2D Graphics Accelerator
+
+maintainers:
+  - Jernej Skrabec <jernej.skrabec@gmail.com>
+
+description: |
+  The A733 G2D contains a mixer and a copy/rotation engine. It reads
+  images from memory, supports rotation, reflection, scaling and color
+  conversion, and writes the processed images back to memory.
+
+properties:
+  compatible:
+    const: allwinner,sun60i-a733-g2d
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    items:
+      - description: G2D bus gate
+      - description: G2D module clock
+      - description: display subsystem MBUS gate
+      - description: display subsystem AHB gate
+
+  clock-names:
+    items:
+      - const: bus
+      - const: g2d
+      - const: mbus
+      - const: ahb
+
+  resets:
+    items:
+      - description: G2D bus reset
+      - description: display subsystem bus reset
+
+  reset-names:
+    items:
+      - const: g2d
+      - const: de
+
+  iommus:
+    maxItems: 1
+
+  power-domains:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - clocks
+  - clock-names
+  - resets
+  - reset-names
+  - iommus
+  - power-domains
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/sun60i-a733-ccu.h>
+    #include <dt-bindings/interrupt-controller/arm-gic.h>
+    #include <dt-bindings/power/allwinner,sun60i-a733-pck-600.h>
+    #include <dt-bindings/reset/sun60i-a733-ccu.h>
+
+    g2d@5440000 {
+        compatible = "allwinner,sun60i-a733-g2d";
+        reg = <0x05440000 0x30000>;
+        interrupts = <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>;
+        clocks = <&ccu CLK_G2D_GATE>, <&ccu CLK_G2D>,
+                 <&ccu CLK_MBUS_DESYS_GATE>, <&ccu CLK_DE_AHB_GATE>;
+        clock-names = "bus", "g2d", "mbus", "ahb";
+        resets = <&ccu RST_BUS_G2D>, <&ccu RST_BUS_DE_SY>;
+        reset-names = "g2d", "de";
+        iommus = <&iommu 10 1>;
+        power-domains = <&pck600 PD_DE_SYS>;
+    };
+...
