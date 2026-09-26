@@ -11,6 +11,7 @@
 #include <linux/crc-ccitt.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
+#include <linux/of_platform.h>
 #include <linux/phy/phy-mipi-dphy.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
@@ -18,9 +19,11 @@
 #include <linux/regulator/consumer.h>
 #include <linux/reset.h>
 #include <linux/slab.h>
+#include <linux/unaligned.h>
 
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_mipi_dsi.h>
+#include <drm/drm_of.h>
 #include <drm/drm_panel.h>
 #include <drm/drm_print.h>
 #include <drm/drm_probe_helper.h>
@@ -29,6 +32,7 @@
 #include "sun4i_crtc.h"
 #include "sun4i_tcon.h"
 #include "sun6i_mipi_dsi.h"
+#include "sun8i_tcon_top.h"
 
 #include <video/mipi_display.h>
 
@@ -725,6 +729,10 @@ static void sun6i_dsi_encoder_enable(struct drm_encoder *encoder)
 
 	DRM_DEBUG_DRIVER("Enabling DSI output\n");
 
+	if (dsi->variant->a733_vo0)
+		sun8i_tcon_top_dsi_config(dsi->tcon_top, dsi->dsi_id,
+					  dsi->tcon_id, true);
+
 	err = regulator_enable(dsi->regulator);
 	if (err)
 		dev_warn(dsi->dev, "failed to enable VCC-DSI supply: %d\n", err);
@@ -759,15 +767,38 @@ static void sun6i_dsi_encoder_enable(struct drm_encoder *encoder)
 	sun6i_dsi_setup_format(dsi, mode);
 	sun6i_dsi_setup_timings(dsi, mode);
 
-	phy_init(dsi->dphy);
+	err = phy_init(dsi->dphy);
+	if (err) {
+		dev_err(dsi->dev, "failed to initialise D-PHY: %d\n", err);
+		clk_disable_unprepare(dsi->mod_clk);
+		reset_control_assert(dsi->reset);
+		regulator_disable(dsi->regulator);
+		if (dsi->variant->a733_vo0)
+			sun8i_tcon_top_dsi_config(dsi->tcon_top, dsi->dsi_id,
+						  dsi->tcon_id, false);
+		return;
+	}
 
 	phy_mipi_dphy_get_default_config(mode->clock * 1000,
 					 mipi_dsi_pixel_format_to_bpp(device->format),
 					 device->lanes, cfg);
 
-	phy_set_mode(dsi->dphy, PHY_MODE_MIPI_DPHY);
-	phy_configure(dsi->dphy, &opts);
-	phy_power_on(dsi->dphy);
+	err = phy_set_mode(dsi->dphy, PHY_MODE_MIPI_DPHY);
+	if (!err)
+		err = phy_configure(dsi->dphy, &opts);
+	if (!err)
+		err = phy_power_on(dsi->dphy);
+	if (err) {
+		dev_err(dsi->dev, "failed to enable D-PHY: %d\n", err);
+		phy_exit(dsi->dphy);
+		clk_disable_unprepare(dsi->mod_clk);
+		reset_control_assert(dsi->reset);
+		regulator_disable(dsi->regulator);
+		if (dsi->variant->a733_vo0)
+			sun8i_tcon_top_dsi_config(dsi->tcon_top, dsi->dsi_id,
+						  dsi->tcon_id, false);
+		return;
+	}
 
 	if (dsi->panel)
 		drm_panel_prepare(dsi->panel);
@@ -811,6 +842,10 @@ static void sun6i_dsi_encoder_disable(struct drm_encoder *encoder)
 	clk_disable_unprepare(dsi->mod_clk);
 	reset_control_assert(dsi->reset);
 	regulator_disable(dsi->regulator);
+
+	if (dsi->variant->a733_vo0)
+		sun8i_tcon_top_dsi_config(dsi->tcon_top, dsi->dsi_id,
+					  dsi->tcon_id, false);
 }
 
 static int sun6i_dsi_get_modes(struct drm_connector *connector)
@@ -847,30 +882,29 @@ static const struct drm_encoder_helper_funcs sun6i_dsi_enc_helper_funcs = {
 	.enable		= sun6i_dsi_encoder_enable,
 };
 
-static u32 sun6i_dsi_dcs_build_pkt_hdr(struct sun6i_dsi *dsi,
-				       const struct mipi_dsi_msg *msg)
+static int sun6i_dsi_build_pkt_hdr(const struct mipi_dsi_msg *msg, u32 *header)
 {
-	u32 pkt = msg->type;
+	struct mipi_dsi_packet packet;
+	int ret;
 
-	if (msg->type == MIPI_DSI_DCS_LONG_WRITE) {
-		pkt |= ((msg->tx_len) & 0xffff) << 8;
-		pkt |= (((msg->tx_len) >> 8) & 0xffff) << 16;
-	} else {
-		pkt |= (((u8 *)msg->tx_buf)[0] << 8);
-		if (msg->tx_len > 1)
-			pkt |= (((u8 *)msg->tx_buf)[1] << 16);
-	}
+	ret = mipi_dsi_create_packet(&packet, msg);
+	if (ret)
+		return ret;
 
-	pkt |= sun6i_dsi_ecc_compute(pkt) << 24;
-
-	return pkt;
+	*header = get_unaligned_le32(packet.header);
+	return 0;
 }
 
 static int sun6i_dsi_dcs_write_short(struct sun6i_dsi *dsi,
 				     const struct mipi_dsi_msg *msg)
 {
-	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0),
-		     sun6i_dsi_dcs_build_pkt_hdr(dsi, msg));
+	u32 header;
+	int ret;
+
+	ret = sun6i_dsi_build_pkt_hdr(msg, &header);
+	if (ret)
+		return ret;
+	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0), header);
 	regmap_write_bits(dsi->regs, SUN6I_DSI_CMD_CTL_REG,
 			  0xff, (4 - 1));
 
@@ -885,9 +919,12 @@ static int sun6i_dsi_dcs_write_long(struct sun6i_dsi *dsi,
 	int ret, len = 0;
 	u8 *bounce;
 	u16 crc;
+	u32 header;
 
-	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0),
-		     sun6i_dsi_dcs_build_pkt_hdr(dsi, msg));
+	ret = sun6i_dsi_build_pkt_hdr(msg, &header);
+	if (ret)
+		return ret;
+	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0), header);
 
 	bounce = kzalloc(ALIGN(msg->tx_len + sizeof(crc), 4), GFP_KERNEL);
 	if (!bounce)
@@ -926,9 +963,12 @@ static int sun6i_dsi_dcs_read(struct sun6i_dsi *dsi,
 	u32 val;
 	int ret;
 	u8 byte0;
+	u32 header;
 
-	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0),
-		     sun6i_dsi_dcs_build_pkt_hdr(dsi, msg));
+	ret = sun6i_dsi_build_pkt_hdr(msg, &header);
+	if (ret)
+		return ret;
+	regmap_write(dsi->regs, SUN6I_DSI_CMD_TX_REG(0), header);
 	regmap_write(dsi->regs, SUN6I_DSI_CMD_CTL_REG,
 		     (4 - 1));
 
@@ -1009,6 +1049,8 @@ static ssize_t sun6i_dsi_transfer(struct mipi_dsi_host *host,
 		     SUN6I_DSI_CMD_CTL_TX_FLAG);
 
 	switch (msg->type) {
+	case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
+	case MIPI_DSI_GENERIC_SHORT_WRITE_1_PARAM:
 	case MIPI_DSI_DCS_SHORT_WRITE:
 	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
 	case MIPI_DSI_GENERIC_SHORT_WRITE_2_PARAM:
@@ -1016,6 +1058,7 @@ static ssize_t sun6i_dsi_transfer(struct mipi_dsi_host *host,
 		break;
 
 	case MIPI_DSI_DCS_LONG_WRITE:
+	case MIPI_DSI_GENERIC_LONG_WRITE:
 		ret = sun6i_dsi_dcs_write_long(dsi, msg);
 		break;
 
@@ -1062,7 +1105,12 @@ static int sun6i_dsi_bind(struct device *dev, struct device *master,
 		dev_err(dsi->dev, "Couldn't initialise the DSI encoder\n");
 		return ret;
 	}
-	dsi->encoder.possible_crtcs = BIT(0);
+	dsi->encoder.possible_crtcs = drm_of_find_possible_crtcs(drm,
+							 dev->of_node);
+	if (!dsi->encoder.possible_crtcs) {
+		ret = -EPROBE_DEFER;
+		goto err_cleanup_encoder;
+	}
 
 	drm_connector_helper_add(&dsi->connector,
 				 &sun6i_dsi_connector_helper_funcs);
@@ -1072,7 +1120,7 @@ static int sun6i_dsi_bind(struct device *dev, struct device *master,
 	if (ret) {
 		dev_err(dsi->dev,
 			"Couldn't initialise the DSI connector\n");
-		goto err_cleanup_connector;
+		goto err_cleanup_encoder;
 	}
 
 	drm_connector_attach_encoder(&dsi->connector, &dsi->encoder);
@@ -1081,7 +1129,7 @@ static int sun6i_dsi_bind(struct device *dev, struct device *master,
 
 	return 0;
 
-err_cleanup_connector:
+err_cleanup_encoder:
 	drm_encoder_cleanup(&dsi->encoder);
 	return ret;
 }
@@ -1164,8 +1212,41 @@ static int sun6i_dsi_probe(struct platform_device *pdev)
 		 * In order to operate properly, the module clock on the
 		 * A31 variant always seems to be set to 297MHz.
 		 */
-		if (variant->set_mod_clk)
-			clk_set_rate_exclusive(dsi->mod_clk, 297000000);
+		if (variant->mod_clk_rate) {
+			ret = clk_set_rate_exclusive(dsi->mod_clk,
+						     variant->mod_clk_rate);
+			if (ret)
+				goto err_attach_clk;
+		}
+	}
+
+	if (variant->a733_vo0) {
+		struct device_node *top_np;
+		struct platform_device *top_pdev;
+
+		top_np = of_parse_phandle(dev->of_node, "allwinner,tcon-top", 0);
+		if (!top_np) {
+			ret = -EINVAL;
+			goto err_unprotect_clk;
+		}
+		top_pdev = of_find_device_by_node(top_np);
+		of_node_put(top_np);
+		if (!top_pdev) {
+			ret = -EPROBE_DEFER;
+			goto err_unprotect_clk;
+		}
+		dsi->tcon_top = &top_pdev->dev;
+		ret = of_property_read_u32(dev->of_node, "allwinner,dsi-id",
+					   &dsi->dsi_id);
+		if (!ret)
+			ret = of_property_read_u32(dev->of_node, "allwinner,tcon-id",
+						   &dsi->tcon_id);
+		if (ret || dsi->dsi_id > 1 || dsi->tcon_id > 1) {
+			put_device(dsi->tcon_top);
+			dsi->tcon_top = NULL;
+			ret = ret ?: -EINVAL;
+			goto err_unprotect_clk;
+		}
 	}
 
 	dsi->dphy = devm_phy_get(dev, "dphy");
@@ -1192,7 +1273,9 @@ static int sun6i_dsi_probe(struct platform_device *pdev)
 err_remove_dsi_host:
 	mipi_dsi_host_unregister(&dsi->host);
 err_unprotect_clk:
-	if (dsi->variant->has_mod_clk && dsi->variant->set_mod_clk)
+	if (dsi->tcon_top)
+		put_device(dsi->tcon_top);
+	if (dsi->variant->has_mod_clk && dsi->variant->mod_clk_rate)
 		clk_rate_exclusive_put(dsi->mod_clk);
 err_attach_clk:
 	regmap_mmio_detach_clk(dsi->regs);
@@ -1207,7 +1290,9 @@ static void sun6i_dsi_remove(struct platform_device *pdev)
 
 	component_del(&pdev->dev, &sun6i_dsi_ops);
 	mipi_dsi_host_unregister(&dsi->host);
-	if (dsi->variant->has_mod_clk && dsi->variant->set_mod_clk)
+	if (dsi->tcon_top)
+		put_device(dsi->tcon_top);
+	if (dsi->variant->has_mod_clk && dsi->variant->mod_clk_rate)
 		clk_rate_exclusive_put(dsi->mod_clk);
 
 	regmap_mmio_detach_clk(dsi->regs);
@@ -1215,7 +1300,7 @@ static void sun6i_dsi_remove(struct platform_device *pdev)
 
 static const struct sun6i_dsi_variant sun6i_a31_mipi_dsi_variant = {
 	.has_mod_clk	= true,
-	.set_mod_clk	= true,
+	.mod_clk_rate	= 297000000,
 };
 
 static const struct sun6i_dsi_variant sun50i_a64_mipi_dsi_variant = {
@@ -1223,6 +1308,12 @@ static const struct sun6i_dsi_variant sun50i_a64_mipi_dsi_variant = {
 
 static const struct sun6i_dsi_variant sun50i_a100_mipi_dsi_variant = {
 	.has_mod_clk	= true,
+};
+
+static const struct sun6i_dsi_variant sun60i_a733_mipi_dsi_variant = {
+	.has_mod_clk	= true,
+	.mod_clk_rate	= 150000000,
+	.a733_vo0	= true,
 };
 
 static const struct of_device_id sun6i_dsi_of_table[] = {
@@ -1237,6 +1328,10 @@ static const struct of_device_id sun6i_dsi_of_table[] = {
 	{
 		.compatible	= "allwinner,sun50i-a100-mipi-dsi",
 		.data		= &sun50i_a100_mipi_dsi_variant,
+	},
+	{
+		.compatible	= "allwinner,sun60i-a733-mipi-dsi",
+		.data		= &sun60i_a733_mipi_dsi_variant,
 	},
 	{ }
 };

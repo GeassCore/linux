@@ -17,7 +17,8 @@
 
 struct sun6i_dsi_variant {
 	bool			has_mod_clk;
-	bool			set_mod_clk;
+	unsigned long		mod_clk_rate;
+	bool			a733_vo0;
 };
 
 struct sun6i_dsi {
@@ -31,6 +32,9 @@ struct sun6i_dsi {
 	struct regulator	*regulator;
 	struct reset_control	*reset;
 	struct phy		*dphy;
+	struct device		*tcon_top;
+	unsigned int		dsi_id;
+	unsigned int		tcon_id;
 
 	struct device		*dev;
 	struct mipi_dsi_device	*device;
