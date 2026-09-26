@@ -76,7 +76,243 @@
 						reg = <0>;
 						remote-endpoint = <&tcon_top_mixer0_in_mixer0>;
 					};
+
+					mixer0_out_tcon_lcd_top: endpoint@1 {
+						reg = <1>;
+						remote-endpoint = <&tcon_lcd_top_in_mixer0>;
+					};
 				};
+			};
+		};
+	};
+
+	tcon_lcd_top: tcon-top@5500000 {
+		compatible = "allwinner,sun60i-a733-tcon-lcd-top";
+		reg = <0x0 0x05500000 0x0 0x1000>;
+		clocks = <&ccu CLK_DPSS_TOP0>, <&ccu CLK_VID_OUT0_AHB_GATE>;
+		clock-names = "bus", "ahb-gate";
+		resets = <&ccu RST_BUS_DPSS_TOP0>, <&ccu RST_BUS_VIDEO_OUT0>;
+		reset-names = "bus", "rst_bus_reg";
+		power-domains = <&pck600 PD_VO>;
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			tcon_lcd_top_in: port@0 {
+				reg = <0>;
+
+				tcon_lcd_top_in_mixer0: endpoint {
+					remote-endpoint = <&mixer0_out_tcon_lcd_top>;
+				};
+			};
+
+			tcon_lcd_top_out: port@1 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <1>;
+
+				tcon_lcd_top_out_tcon0: endpoint@0 {
+					reg = <0>;
+					remote-endpoint = <&tcon_lcd0_in_top>;
+				};
+
+				tcon_lcd_top_out_tcon1: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&tcon_lcd1_in_top>;
+				};
+
+				tcon_lcd_top_out_tcon2: endpoint@2 {
+					reg = <2>;
+					remote-endpoint = <&tcon_lcd2_in_top>;
+				};
+			};
+		};
+	};
+
+	tcon_lcd0: lcd-controller@5501000 {
+		compatible = "allwinner,sun60i-a733-tcon-lcd0",
+			     "allwinner,sun60i-a733-tcon-lcd";
+		reg = <0x0 0x05501000 0x0 0x1000>;
+		interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_VO0_TCONLCD0>, <&ccu CLK_VO0_TCONLCD0>;
+		clock-names = "ahb", "tcon-ch0";
+		clock-output-names = "tcon-lcd0-data-clock";
+		#clock-cells = <0>;
+		assigned-clocks = <&ccu CLK_VO0_TCONLCD0>;
+		assigned-clock-parents = <&ccu CLK_PLL_VIDEO2_4X>;
+		resets = <&ccu RST_BUS_VO0_TCONLCD0>, <&ccu RST_BUS_LVDS0>;
+		reset-names = "lcd", "lvds";
+		power-domains = <&pck600 PD_VO>;
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				tcon_lcd0_in_top: endpoint {
+					remote-endpoint = <&tcon_lcd_top_out_tcon0>;
+				};
+			};
+
+			tcon_lcd0_out: port@1 {
+				reg = <1>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				tcon_lcd0_out_dsi0: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&dsi0_in_tcon_lcd0>;
+				};
+			};
+		};
+	};
+
+	dsi0: dsi@5506000 {
+		compatible = "allwinner,sun60i-a733-mipi-dsi";
+		reg = <0x0 0x05506000 0x0 0x1000>;
+		interrupts = <GIC_SPI 59 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_DSI0>, <&ccu CLK_DSI0>;
+		clock-names = "bus", "mod";
+		assigned-clocks = <&ccu CLK_DSI0>;
+		assigned-clock-parents = <&ccu CLK_PLL_PERI0_150M>;
+		resets = <&ccu RST_BUS_DSI0>;
+		phys = <&dsi0_combophy>;
+		phy-names = "dphy";
+		allwinner,tcon-top = <&tcon_lcd_top>;
+		allwinner,dsi-id = <0>;
+		allwinner,tcon-id = <0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+
+		port {
+			dsi0_in_tcon_lcd0: endpoint {
+				remote-endpoint = <&tcon_lcd0_out_dsi0>;
+			};
+		};
+	};
+
+	dsi0_combophy: phy@5507000 {
+		compatible = "allwinner,sun60i-a733-display-combo-phy";
+		reg = <0x0 0x05507000 0x0 0x200>;
+		clocks = <&ccu CLK_BUS_DSI0>, <&dcxo24M>;
+		clock-names = "bus", "ref";
+		resets = <&ccu RST_BUS_DSI0>;
+		#phy-cells = <0>;
+		status = "disabled";
+	};
+
+	dsi1_combophy: phy@5509000 {
+		compatible = "allwinner,sun60i-a733-display-combo-phy";
+		reg = <0x0 0x05509000 0x0 0x200>;
+		clocks = <&ccu CLK_BUS_DSI1>, <&dcxo24M>;
+		clock-names = "bus", "ref";
+		resets = <&ccu RST_BUS_DSI1>;
+		#phy-cells = <0>;
+		status = "disabled";
+	};
+
+	tcon_lcd1: lcd-controller@5502000 {
+		compatible = "allwinner,sun60i-a733-tcon-lcd1",
+			     "allwinner,sun60i-a733-tcon-lcd";
+		reg = <0x0 0x05502000 0x0 0x1000>;
+		interrupts = <GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_VO0_TCONLCD1>, <&ccu CLK_VO0_TCONLCD1>;
+		clock-names = "ahb", "tcon-ch0";
+		clock-output-names = "tcon-lcd1-data-clock";
+		#clock-cells = <0>;
+		assigned-clocks = <&ccu CLK_VO0_TCONLCD1>;
+		assigned-clock-parents = <&ccu CLK_PLL_VIDEO2_4X>;
+		resets = <&ccu RST_BUS_VO0_TCONLCD1>;
+		reset-names = "lcd";
+		power-domains = <&pck600 PD_VO>;
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				tcon_lcd1_in_top: endpoint {
+					remote-endpoint = <&tcon_lcd_top_out_tcon1>;
+				};
+			};
+
+			tcon_lcd1_out: port@1 {
+				reg = <1>;
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				tcon_lcd1_out_dsi1: endpoint@1 {
+					reg = <1>;
+					remote-endpoint = <&dsi1_in_tcon_lcd1>;
+				};
+			};
+		};
+	};
+
+	dsi1: dsi@5508000 {
+		compatible = "allwinner,sun60i-a733-mipi-dsi";
+		reg = <0x0 0x05508000 0x0 0x1000>;
+		interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_DSI1>, <&ccu CLK_DSI1>;
+		clock-names = "bus", "mod";
+		assigned-clocks = <&ccu CLK_DSI1>;
+		assigned-clock-parents = <&ccu CLK_PLL_PERI0_150M>;
+		resets = <&ccu RST_BUS_DSI1>;
+		phys = <&dsi1_combophy>;
+		phy-names = "dphy";
+		allwinner,tcon-top = <&tcon_lcd_top>;
+		allwinner,dsi-id = <1>;
+		allwinner,tcon-id = <1>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+
+		port {
+			dsi1_in_tcon_lcd1: endpoint {
+				remote-endpoint = <&tcon_lcd1_out_dsi1>;
+			};
+		};
+	};
+
+	tcon_lcd2: lcd-controller@5503000 {
+		compatible = "allwinner,sun60i-a733-tcon-lcd2",
+			     "allwinner,sun60i-a733-tcon-lcd";
+		reg = <0x0 0x05503000 0x0 0x1000>;
+		interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&ccu CLK_BUS_VO0_TCONLCD2>, <&ccu CLK_VO0_TCONLCD2>;
+		clock-names = "ahb", "tcon-ch0";
+		clock-output-names = "tcon-lcd2-data-clock";
+		#clock-cells = <0>;
+		assigned-clocks = <&ccu CLK_VO0_TCONLCD2>;
+		assigned-clock-parents = <&ccu CLK_PLL_VIDEO2_4X>;
+		resets = <&ccu RST_BUS_VO0_TCONLCD2>;
+		reset-names = "lcd";
+		power-domains = <&pck600 PD_VO>;
+		status = "disabled";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				tcon_lcd2_in_top: endpoint {
+					remote-endpoint = <&tcon_lcd_top_out_tcon2>;
+				};
+			};
+
+			tcon_lcd2_out: port@1 {
+				reg = <1>;
 			};
 		};
 	};
