@@ -13,6 +13,9 @@ sun4i-drm-hdmi-y		+= sun4i_hdmi_tmds_clk.o
 sun8i-drm-hdmi-y		+= sun8i_dw_hdmi.o
 sun8i-drm-hdmi-y		+= sun8i_hdmi_phy.o
 sun8i-drm-hdmi-y		+= sun8i_hdmi_phy_clk.o
+sun8i-drm-hdmi-y		+= sun60i_hdmi_phy.o
+sun8i-drm-hdmi-y		+= sun60i_hdmi_top_phy.o
+sun8i-drm-hdmi-y		+= sun60i_hdmi_snps_phy.o
 
 sun8i-mixer-y			+= sun8i_mixer.o sun8i_ui_layer.o \
 				   sun8i_vi_layer.o sun8i_ui_scaler.o \
