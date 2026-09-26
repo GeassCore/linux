@@ -43,6 +43,7 @@ properties:
       - allwinner,sun8i-r40-tcon-top
       - allwinner,sun20i-d1-tcon-top
       - allwinner,sun50i-h6-tcon-top
+      - allwinner,sun60i-a733-tcon-lcd-top
       - allwinner,sun60i-a733-tcon-top
 
   reg:
@@ -177,6 +178,37 @@ allOf:
           required:
             - port@4
             - port@5
+
+  - if:
+      properties:
+        compatible:
+          contains:
+            const: allwinner,sun60i-a733-tcon-lcd-top
+
+    then:
+      properties:
+        clocks:
+          items:
+            - description: The DPSS TOP0 interface clock
+            - description: The Video Output 0 AHB gate
+
+        clock-names:
+          items:
+            - const: bus
+            - const: ahb-gate
+
+        resets:
+          items:
+            - description: The DPSS TOP0 reset
+            - description: The Video Output 0 register reset
+
+        reset-names:
+          items:
+            - const: bus
+            - const: rst_bus_reg
+
+      required:
+        - reset-names
 
   - if:
       properties:

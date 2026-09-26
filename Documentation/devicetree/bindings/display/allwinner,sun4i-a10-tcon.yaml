@@ -35,7 +35,15 @@ properties:
       - const: allwinner,sun9i-a80-tcon-tv
       - const: allwinner,sun20i-d1-tcon-lcd
       - const: allwinner,sun20i-d1-tcon-tv
+      - const: allwinner,sun60i-a733-tcon-lcd
       - const: allwinner,sun60i-a733-tcon-tv
+
+      - items:
+          - enum:
+              - allwinner,sun60i-a733-tcon-lcd0
+              - allwinner,sun60i-a733-tcon-lcd1
+              - allwinner,sun60i-a733-tcon-lcd2
+          - const: allwinner,sun60i-a733-tcon-lcd
 
       - items:
           - enum:
@@ -115,6 +123,12 @@ properties:
           - const: lcd
           - const: edp
           - const: lvds
+
+  phys:
+    maxItems: 1
+
+  phy-names:
+    const: lvds
 
   ports:
     $ref: /schemas/graph.yaml#/properties/ports
@@ -235,6 +249,7 @@ allOf:
               - allwinner,sun8i-v3s-tcon
               - allwinner,sun9i-a80-tcon-lcd
               - allwinner,sun20i-d1-tcon-lcd
+              - allwinner,sun60i-a733-tcon-lcd
 
     then:
       properties:
@@ -245,6 +260,20 @@ allOf:
           items:
             - const: ahb
             - const: tcon-ch0
+
+  - if:
+      properties:
+        compatible:
+          contains:
+            const: allwinner,sun60i-a733-tcon-lcd0
+
+    then:
+      properties:
+        phys:
+          maxItems: 1
+
+        phy-names:
+          const: lvds
 
   - if:
       properties:
@@ -283,6 +312,7 @@ allOf:
               - allwinner,sun4i-a10-tcon
               - allwinner,sun8i-a83t-tcon-lcd
               - allwinner,sun20i-d1-tcon-lcd
+              - allwinner,sun60i-a733-tcon-lcd
 
     then:
       required:
