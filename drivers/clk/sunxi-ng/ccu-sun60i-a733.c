@@ -98,6 +98,10 @@ static SUNXI_CCU_M(pll_peri0_2x_clk, "pll-peri0-2x",
 		20, 3,
 		0);
 
+static const struct clk_hw *pll_peri0_2x_hws[] = {
+	&pll_peri0_2x_clk.common.hw,
+};
+
 static SUNXI_CCU_M(pll_peri0_800m_clk, "pll-peri0-800m",
 		"pll-peri0", 0x00A0,
 		16, 3,
@@ -155,7 +159,9 @@ static CLK_FIXED_FACTOR(pll_peri1_300m_clk, "pll-peri1-300m", "pll-peri1-600m", 
 static CLK_FIXED_FACTOR(pll_peri1_200m_clk, "pll-peri1-200m", "pll-peri1-400m", 2, 1, 0);
 static CLK_FIXED_FACTOR(pll_peri1_160m_clk, "pll-peri1-160m", "pll-peri1-480m", 3, 1, 0);
 static CLK_FIXED_FACTOR(pll_peri1_150m_clk, "pll-peri1-150m", "pll-peri1-300m", 2, 1, 0);
-static CLK_FIXED_FACTOR(hdmi_cec_32k_clk,   "hdmi-cec-clk32k", "pll-peri0-2x", 1, 36621, 0);
+static SUNXI_CCU_GATE_HWS_WITH_PREDIV(hdmi_cec_32k_clk,
+		"hdmi-cec-clk32k", pll_peri0_2x_hws,
+		0x1680, BIT(30), 36621, 0);
 
 
 #define SUN60IW2_PLL_GPU0_CTRL_REG   0x00E0
@@ -2267,7 +2273,7 @@ static struct clk_hw_onecell_data sun60iw2_hw_clks = {
 		[CLK_PLL_PERI1_200M]		= &pll_peri1_200m_clk.hw,
 		[CLK_PLL_PERI1_160M]		= &pll_peri1_160m_clk.hw,
 		[CLK_PLL_PERI1_150M]		= &pll_peri1_150m_clk.hw,
-		[CLK_HDMI_CEC_32K]			= &hdmi_cec_32k_clk.hw,
+		[CLK_HDMI_CEC_32K]			= &hdmi_cec_32k_clk.common.hw,
 		[CLK_PLL_GPU0]			= &pll_gpu0_clk.common.hw,
 		[CLK_PLL_VIDEO0]		= &pll_video0_clk.common.hw,
 		[CLK_PLL_VIDEO0_4X]		= &pll_video0_4x_clk.common.hw,
@@ -2580,6 +2586,7 @@ static struct ccu_common *sun60iw2_ccu_clks[] = {
 	&pll_peri0_2x_clk.common,
 	&pll_peri0_800m_clk.common,
 	&pll_peri0_480m_clk.common,
+	&hdmi_cec_32k_clk.common,
 	&pll_peri1_clk.common,
 	&pll_peri1_2x_clk.common,
 	&pll_peri1_800m_clk.common,
