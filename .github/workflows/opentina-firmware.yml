@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: MIT
+# Component CI via opentina-org/build firmware-component.yml (no sdcard.img).
+name: OpenTina component
+
+on:
+  pull_request:
+    branches:
+      - tina-dev
+
+jobs:
+  build:
+    uses: opentina-org/build/.github/workflows/firmware-component.yml@tina-dev
+    secrets:
+      token: ${{ secrets.OPENTINA_GH_TOKEN }}

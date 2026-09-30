@@ -11,6 +11,9 @@
 # Normal rules (sorted alphabetically)
 #
 .*
+# OpenTina CI lives in .github/; keep it trackable despite ".*"
+!.github/
+!.github/**
 *.a
 *.asn1.[ch]
 *.bin
